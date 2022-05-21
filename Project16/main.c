@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include<assert.h>
 
 typedef struct StudentCourseGrade
 {
@@ -60,22 +61,101 @@ int main()
 
 void countStudentsAndCourses(const char* fileName, int** coursesPerStudent, int* numberOfStudents)
 {
-  
+	FILE* file = fopen(fileName, "rt");
+	if (file == NULL) {
+		printf("open error");
+	}
+	int count = 0;
+	char buffer[1023];
+	
+	while (fgets(buffer, 1023, file)) {
+		//Student* student = (Student*)realloc(sizeof(Student),student);
+		count++;
+
+	}
+
+	*numberOfStudents = count;
+	int* arr = (int*)malloc(sizeof(int) * count);
+	if (arr == NULL) {
+		printf("alocation failed");
+		exit(1);
+	}
+	count = 0;
+	rewind(file);
+
+	while (fgets(buffer, 1023, file)) {
+		
+		*(arr + count) =  countPipes(buffer, 1023); //--
+		count++;
+	}
+	*coursesPerStudent = arr;
+	fclose(file);
 }
 
 int countPipes(const char* lineBuffer, int maxCount)
 {
-	
+	int count = 0;
+	char* temp = NULL;
+	if (lineBuffer == NULL) {
+		return -1;
+	}
+	else if(maxCount <= 0) { 
+		return 0;
+	}
+	temp = strchr(lineBuffer, '|');
+	while (temp != NULL) {
+		count++;
+		lineBuffer = temp + 1;
+		temp = strchr(lineBuffer, '|');
+	}
+	return count;
 }
 
 char*** makeStudentArrayFromFile(const char* fileName, int** coursesPerStudent, int* numberOfStudents)
 {
-	//add code here
+	char* pipe = "|";
+	FILE* file = fopen(fileName, "rt");
+	if (file == NULL) {
+		printf("open error");
+	}
+	int count = 0;
+	char buffer[1023];
+	char* tempStudent;
+	
+	char*** students = (char***)malloc(sizeof(char**) * (*numberOfStudents));
+
+	for (int i = 0; i < *numberOfStudents; i++)
+	{		
+		*(students+i) = (char*)malloc(sizeof(char*) * (*(*(coursesPerStudent + i)))*2); //coursesPerStudent[i]	
+	}
+
+	while (fgets(buffer, 1023, file)) {
+		count++;
+		tempStudent = strtok(buffer, pipe);
+	}
+	fclose(file);
+	return students;
 }
 
 void factorGivenCourse(char** const* students, const int* coursesPerStudent, int numberOfStudents, const char* courseName, int factor)
 {
-	//add code here
+	int grade = 0;
+	if (factor < (-20) && (factor > 20))
+		printf("error- try again");
+	for (int i = 0;i < numberOfStudents; i++) {
+		for (int j = 0; j < *(*(*(students))); j++) {
+			if (strstr(students, courseName)) {
+				grade = atoi(students[i][j]);
+				grade += factor;
+				if (grade > 100)
+					grade = 100;
+				if (grade < 0)
+					grade = 0;
+				_itoa(grade, students[i][j], 10);
+			}
+		}
+		
+	}
 }
 
 void printStudentArray(const char* const* const* students, const int* coursesPerStudent, int numberOfStudents)
@@ -94,7 +174,18 @@ void printStudentArray(const char* const* const* students, const int* coursesPer
 
 void studentsToFile(char*** students, int* coursesPerStudent, int numberOfStudents)
 {
-	//add code here
+	FILE* file =fopen("studentList.txt", "w");
+
+	for (int i = 0; i < numberOfStudents; i++) {
+		for (int j = 0; j < *(*(*(students))); j++) {
+			fprintf(file, "%s", students);
+			free(students[i][j]);
+		}
+		free(students[i]);
+	}
+	free(coursesPerStudent);
+	free(students);
+	fclose(file);
 }
 
 void writeToBinFile(const char* fileName, Student* students, int numberOfStudents)
