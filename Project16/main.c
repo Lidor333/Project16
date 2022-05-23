@@ -43,7 +43,7 @@ int main()
 	char*** students = makeStudentArrayFromFile("studentList.txt", &coursesPerStudent, &numberOfStudents);
 	factorGivenCourse(students, coursesPerStudent, numberOfStudents, "Advanced Topics in C", +5);
 	printStudentArray(students, coursesPerStudent, numberOfStudents);
-	//studentsToFile(students, coursesPerStudent, numberOfStudents); //this frees all memory. Part B fails if this line runs. uncomment for testing (and comment out Part B)
+	studentsToFile(students, coursesPerStudent, numberOfStudents); //this frees all memory. Part B fails if this line runs. uncomment for testing (and comment out Part B)
 
 	//Part B
 	Student* transformedStudents = transformStudentArray(students, coursesPerStudent, numberOfStudents);
@@ -68,10 +68,8 @@ void countStudentsAndCourses(const char* fileName, int** coursesPerStudent, int*
 	int count = 0;
 	char buffer[1023];
 	
-	while (fgets(buffer, 1023, file)) {
-		//Student* student = (Student*)realloc(sizeof(Student),student);
+	while (fgets(buffer, 1023, file)!=NULL) {
 		count++;
-
 	}
 
 	*numberOfStudents = count;
@@ -85,9 +83,10 @@ void countStudentsAndCourses(const char* fileName, int** coursesPerStudent, int*
 
 	while (fgets(buffer, 1023, file)) {
 		
-		*(arr + count) =  countPipes(buffer, 1023); //--
+		*(arr + count) =  countPipes(buffer, 1023); 
 		count++;
 	}
+
 	*coursesPerStudent = arr;
 	fclose(file);
 }
@@ -113,29 +112,68 @@ int countPipes(const char* lineBuffer, int maxCount)
 
 char*** makeStudentArrayFromFile(const char* fileName, int** coursesPerStudent, int* numberOfStudents)
 {
+	countStudentsAndCourses(fileName, coursesPerStudent, numberOfStudents);
 	char* pipe = "|";
-	FILE* file = fopen(fileName, "rt");
+	char* psik = ",";
+	int details;
+
+
+	FILE* file = fopen(fileName, "rt"); //open a  file for only reading
 	if (file == NULL) {
 		printf("open error");
+		exit(1);
 	}
-	int count = 0;
-	char buffer[1023];
-	char* tempStudent;
 	
-	char*** students = (char***)malloc(sizeof(char**) * (*numberOfStudents));
-
+	
+	char*** students = (char***)malloc(sizeof(char**) * (*numberOfStudents)); //make arr of 3 pointers of students
+	if (!students) {
+		printf("error\n");
+		exit(1);
+	}
+	 
+	
 	for (int i = 0; i < *numberOfStudents; i++)
-	{		
-		*(students+i) = (char*)malloc(sizeof(char*) * (*(*(coursesPerStudent + i)))*2); //coursesPerStudent[i]	
-	}
+	{
+		char* buffer =  (char*)malloc(1023 * sizeof(char));
+		if (!buffer) {
+			exit(1);
+		}
+		char* bufferp = buffer;
+		details = (*coursesPerStudent)[i] * 2 + 1;	
+		students[i] = (char**)malloc(details * sizeof(char*));
+		if (!students[i]) {
+			exit(1);
+		}
 
-	while (fgets(buffer, 1023, file)) {
-		count++;
-		tempStudent = strtok(buffer, pipe);
+		fgets(buffer, 1023, file);
+
+		for (int j = 0; j < details; j = j + 2) {
+   
+				char* variable = strtok(buffer, pipe);
+				students[i][j] = (char*)malloc(strlen(variable) * sizeof(char) + 1);
+				if (!students[i][j + 1]) {
+					exit(1);
+				}
+				strcpy(students[i][j],variable);
+				buffer = buffer + strlen(variable) + 1;
+				char* variable1 = strtok(buffer, psik);
+				students[i][j+1] = (char*)malloc(strlen(variable1)*sizeof(char) + 1);
+				if (!students[i][j+1]) {
+					exit(1);
+				}
+				strcpy(students[i][j+1], variable1);
+				buffer = buffer + strlen(variable1) + 1;
+		}
+		free(bufferp);
 	}
+	
 	fclose(file);
 	return students;
 }
+
+
+
+	
 
 void factorGivenCourse(char** const* students, const int* coursesPerStudent, int numberOfStudents, const char* courseName, int factor)
 {
@@ -156,6 +194,7 @@ void factorGivenCourse(char** const* students, const int* coursesPerStudent, int
 		}
 		
 	}
+	printStudentArray(students, coursesPerStudent, numberOfStudents);
 }
 
 void printStudentArray(const char* const* const* students, const int* coursesPerStudent, int numberOfStudents)
@@ -174,31 +213,116 @@ void printStudentArray(const char* const* const* students, const int* coursesPer
 
 void studentsToFile(char*** students, int* coursesPerStudent, int numberOfStudents)
 {
-	FILE* file =fopen("studentList.txt", "w");
-
-	for (int i = 0; i < numberOfStudents; i++) {
-		for (int j = 0; j < *(*(*(students))); j++) {
-			fprintf(file, "%s", students);
-			free(students[i][j]);
-		}
-		free(students[i]);
+	FILE* pfile;
+	pfile = fopen("studentListcopy.txt", "w");
+	if (pfile == NULL)
+	{
+		printf("error\n");
+		exit(1);
 	}
-	free(coursesPerStudent);
-	free(students);
-	fclose(file);
+	int i = 0, j = 0;
+	char buffer[1023];
+	char* token = NULL;
+	for(int i=0;i<numberOfStudents;i++){
+	
+		for(int j=0;j<coursesPerStudent[i]*+1;j++){
+			strcpy(buffer, students[i][j]);
+			if (j == (coursesPerStudent[i] * 2))
+			{
+				token = strtok(buffer, "\n");
+				fputs(token, pfile);
+				fputc('\n', pfile);
+				break;
+			}
+			fputs(buffer, pfile);
+			if (j % 2 != 0)
+			{
+				fputc(',', pfile);
+			}
+			else
+			{
+				fputc('|', pfile);
+			}
+		}
+		fputc('\n', pfile);
+	}
+	fclose(pfile);
 }
 
 void writeToBinFile(const char* fileName, Student* students, int numberOfStudents)
 {
-	//add code here
+	FILE* pbfile;
+	pbfile = fopen(fileName, "wb");
+	if (!pbfile)
+		printf("Unable to open file!");
+	else
+	{
+		fwrite(&numberOfStudents, sizeof(int), 1, pbfile); //add a number of students to the start of file
+		int i = 0;
+		for (; i < numberOfStudents; i++)
+		{
+			fwrite(&students[i].name, 35 * sizeof(char), 1, pbfile); //write the name of student
+			fwrite(&students[i].numberOfCourses, sizeof(int), 1, pbfile); // write number of courses of student
+		}
+		for (int j = 0; j < students[i].numberOfCourses; j++)
+		{
+			fwrite(&students[i].grades[j].courseName, 35 * sizeof(char), 1, pbfile); //write the name of the courses
+			fwrite(&students[i].grades[j].grade, sizeof(int), 1, pbfile);//write the grades of the courses
+		}
+
+	}
+	fclose(pbfile);
 }
 
 Student* readFromBinFile(const char* fileName)
 {
-	//add code here
+	int numberOfStudents;
+	FILE* pbfile;
+	pbfile = fopen(fileName, "rb");
+	if (!pbfile)
+		printf("Unable to open file!");
+	else
+	{
+		fread(&numberOfStudents, sizeof(int), 1, pbfile);
+		Student* students = (Student*)calloc(numberOfStudents, sizeof(Student));//Dynamic allocation of the number of students
+		int i = 0;
+		for (; i < numberOfStudents; i++)
+		{
+			fread(&students[i].name, 35 * sizeof(char), 1, pbfile); //read the name of student
+			fread(&students[i].numberOfCourses, sizeof(int), 1, pbfile); // read number of courses of student
+		}
+
+		students[i].grades = (StudentCourseGrade*)calloc(students[i].numberOfCourses, sizeof(StudentCourseGrade));//Dynamic allocation of the number of courses
+
+		for (int j = 0; j < students[i].numberOfCourses; j++)
+		{
+			fread(&students[i].grades[j].courseName, 35 * sizeof(char), 1, pbfile); //read the name of the courses
+			fread(&students[i].grades[j].grade, sizeof(int), 1, pbfile);//read the grades of the courses
+		}
+	}
+	fclose(pbfile);
 }
 
 Student* transformStudentArray(char*** students, const int* coursesPerStudent, int numberOfStudents)
 {
-	//add code here
+	Student* studentList = (Student*)calloc(numberOfStudents, sizeof(Student)); //Dynamic allocation of the student list
+	if (!studentList)//(studentList==NULL)--> allocation didn't succeed
+	{
+		printf("ERROR!out of memory!\n");
+		return;
+	}
+
+	for (int i = 0; i < numberOfStudents; i++)
+	{
+		strcpy((studentList[i]).name, students[i][0]); //copy the names of students
+		studentList[i].numberOfCourses = coursesPerStudent[i]; //copy the number of course per student
+		studentList[i].grades = (StudentCourseGrade*)calloc(coursesPerStudent[i], sizeof(StudentCourseGrade));//Dynamic allocation of the grades per student
+		for (int j = 1, k = 0; j <= coursesPerStudent[i] * 2; j += 2)
+		{
+			strcpy(studentList[i].grades[k].courseName, students[i][j]);//copy course name
+			studentList[i].grades[k].grade = atoi(students[i][j + 1]);// copy course grade for every course from string to integer
+			k++;
+		}
+	}
+	return(studentList);
 }

@@ -1,0 +1,9 @@
+Avi|Linear Algebra,84|Complexity Theory,99|
+Yarden|
+Sivan|Advanced Topics in C,
+Tal|
+Erez|
+Shalom|Algorithms,100|
+Ronit|
+Yehuda|
+Vardit|
